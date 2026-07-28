@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<!-- This is the main URDF file for mmo_700 (Mobile Manipulator Omnidirectional 700)-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mmo_700">
+
+    <!--set use_gazebo = false for implementation on real robot-->
+    <xacro:arg name="use_gazebo" default="true"/>
+
+    <!--set use_docking_adapter = false (not applicable for MMO_700)-->
+    <xacro:arg name="use_docking_adapter" default="false"/>
+
+    <!--set arm name to include the arm in the simulation-->
+    <xacro:arg name="arm_type" default="ur5e"/>
+
+    <!-- Arm tool type: ability_hand or robotiq_gripper; none otherwise -->
+    <xacro:arg name="arm_tool" default="robotiq_gripper"/>
+
+    <!-- Wrist camera type: d405_angled, d405_straight; none otherwise -->
+    <xacro:arg name="wrist_camera" default=""/>
+
+    <!-- Camera configuration arguments -->
+    <xacro:arg name="include_wrist_camera" default="true"/>
+    <xacro:arg name="include_depth_camera" default="false"/>
+    <xacro:arg name="include_pan_tilt" default="false"/>
+
+    <!-- Arm properties-->
+    <xacro:property name="arm" value="$(arg arm_type)"/>
+    <xacro:property name="use_arm" value="false"/>
+
+    <!-- OmniDriveModule(ODM) joint type for both wheels and casters(fixed for simulation)-->
+    <xacro:property name="ODM_joint_type" value="fixed"/>
+
+    <!-- import main body description -->
+    <xacro:include filename="$(find steve_simulation)/robots/mmo_700/urdf/mmo_700_body.urdf.xacro"/>
+
+    <!-- If Simulation is used -->
+    <xacro:if value="$(arg use_gazebo)">
+        <xacro:include filename="$(find steve_simulation)/robots/mmo_700/urdf/mmo_700_gazebo.urdf.xacro"/>
+    </xacro:if>
+
+    <!-- Check if one of the arms is used -->
+    <xacro:if value="${arm == 'ur5' or arm == 'ur10' or arm == 'ur5e' or arm == 'ur10e' or arm == 'ec66' or arm == 'cs66'}">
+        <xacro:property name="use_arm" value="true"/>
+    </xacro:if>
+
+    <!-- If Arm is used -->
+    <xacro:if value="${use_arm}">
+        <!-- cabinet -->
+        <xacro:include filename="$(find steve_simulation)/components/common_macro/mpo_cabinet_macro.xacro"/>
+        <xacro:cabinet
+            neo_robot_name="mmo_700"
+            parent_link="base_link"
+            model_scale="0.001 0.001 0.001"
+            inertial_rpy="0 0 -1.5708"
+            visual_rpy="0 0 -1.5708"
+            collision_rpy="0 0 -1.5708"
+        >
+            <origin rpy="0 0 0" xyz="0.072 0 0.35"/>
+        </xacro:cabinet>
+
+        <!-- Universal Robotics Arm-->
+        <xacro:if value="${arm == 'ur5' or arm == 'ur10' or arm == 'ur5e' or arm == 'ur10e'}">
+            <xacro:include filename="$(find steve_simulation)/components/arm/ur_arm.urdf.xacro"/>
+        </xacro:if>
+
+        <!-- Elite Arm -->
+        <xacro:if value="${arm == 'ec66' or arm == 'cs66'}">
+            <xacro:include filename="$(find steve_simulation)/components/arm/elite_arm.urdf.xacro"/>
+        </xacro:if>
+
+
+        <!-- Wrist camera is now integrated into ur_arm assembly (with dummy end-effector) -->
+        <!-- <xacro:if value="$(arg include_wrist_camera)">
+            <xacro:include filename="$(find steve_simulation)/components/cameras/wrist_d405.urdf.xacro"/>
+            <xacro:wrist_d405 parent="ur5etool0" use_gazebo="$(arg use_gazebo)"/>
+        </xacro:if> -->
+    </xacro:if>
+
+    <!-- Optional depth camera on base -->
+    <xacro:if value="$(arg include_depth_camera)">
+        <xacro:include filename="$(find steve_simulation)/robots/mmo_700/urdf/macro/depth_camera_macro.xacro"/>
+        <xacro:depth_camera name="front_camera" parent="base_link" use_gazebo="$(arg use_gazebo)">
+            <origin xyz="0.292 0 0.716" rpy="0 0 0"/>
+        </xacro:depth_camera>
+    </xacro:if>
+
+    <!-- Pan-tilt camera tower on base -->
+    <xacro:if value="$(arg include_pan_tilt)">
+        <xacro:include filename="$(find steve_simulation)/components/pan_tilt/pan_tilt_tower.urdf.xacro"/>
+        <xacro:pan_tilt_tower parent_link="base_link" use_gazebo="$(arg use_gazebo)"/>
+    </xacro:if>
+
+</robot>

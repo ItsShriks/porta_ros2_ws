@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mmo_700">
+
+    <!-- Include macros from common components -->
+    <xacro:include filename="$(find steve_simulation)/components/common_macro/gazebo_lidar_macro.xacro" />
+    <xacro:include filename="$(find steve_simulation)/components/common_macro/gazebo_object_controller_macro.xacro" />
+
+    <!-- Properties -->
+    <xacro:property name="lidar_1_update_rate" value="40" />
+    <xacro:property name="lidar_2_update_rate" value="40" />
+    <xacro:property name="controller_update_rate" value="100" />
+    <xacro:property name="odom_update_rate" value="100" />
+
+    <!--Object Controller for omnidirectional movement-->
+    <xacro:gazebo_object_controller
+        odom_update_rate="${odom_update_rate}"
+        controller_update_rate="${controller_update_rate}"
+        odom_frame="odom"
+        base_frame="base_link"
+        covariance_yaw="0.0001"
+    />
+
+    <!-- Lidar 1 Sensor -->
+    <xacro:gazebo_lidar_sensor
+        sensor_name="lidar_1_sensor"
+        link_name="lidar_1_link"
+        update_rate="${lidar_1_update_rate}"
+        min_range="0.10"
+        max_range="30.0"
+        horizontal_samples="720"
+        min_angle="-1.48"
+        max_angle="1.48"
+        noise_mean="0.0"
+        noise_stddev="0.01"
+        topic_name="lidar_1/scan"
+        visualize="false"
+    />
+
+    <!-- Lidar 2 Sensor -->
+    <xacro:gazebo_lidar_sensor
+        sensor_name="lidar_2_sensor"
+        link_name="lidar_2_link"
+        update_rate="${lidar_2_update_rate}"
+        min_range="0.10"
+        max_range="30.0"
+        horizontal_samples="720"
+        min_angle="-1.48"
+        max_angle="1.48"
+        noise_mean="0.0"
+        noise_stddev="0.01"
+        topic_name="lidar_2/scan"
+        visualize="false"
+    />
+
+    <!--Wheels - Gazebo friction properties-->
+    <gazebo reference="mpo_700_wheel_front_left_link">
+      <mu1>0.05</mu1>
+      <mu2>0.05</mu2>
+      <kp>100000.0</kp>
+      <kd>10.0</kd>
+    </gazebo>
+    <gazebo reference="mpo_700_wheel_front_right_link">
+      <mu1>0.05</mu1>
+      <mu2>0.05</mu2>
+      <kp>100000.0</kp>
+      <kd>10.0</kd>
+    </gazebo>
+    <gazebo reference="mpo_700_wheel_back_left_link">
+      <mu1>0.05</mu1>
+      <mu2>0.05</mu2>
+      <kp>100000.0</kp>
+      <kd>10.0</kd>
+    </gazebo>
+    <gazebo reference="mpo_700_wheel_back_right_link">
+      <mu1>0.05</mu1>
+      <mu2>0.05</mu2>
+      <kp>100000.0</kp>
+      <kd>10.0</kd>
+    </gazebo>
+
+</robot>

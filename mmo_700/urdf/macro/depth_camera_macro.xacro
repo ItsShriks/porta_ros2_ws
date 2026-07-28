@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="depth_camera" params="name parent *origin use_gazebo">
+    <xacro:property name="depth_camera_size" value="0.05" />
+    
+    <joint name="${name}_joint" type="fixed">
+      <axis xyz="0 1 0" />
+      <xacro:insert_block name="origin" />
+      <parent link="${parent}"/>
+      <child link="${name}_link"/>
+    </joint>
+    
+    <joint name="${name}_optical_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+      <parent link="${name}_link"/>
+      <child link="${name}_optical_frame"/>
+    </joint>
+    
+    <link name="${name}_link">
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${depth_camera_size} ${depth_camera_size} ${depth_camera_size}"/>
+        </geometry>
+      </collision>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${depth_camera_size} ${depth_camera_size} ${depth_camera_size}"/>
+        </geometry>
+        <material name="camera_grey">
+          <color rgba="0.5 0.5 0.5 1" />
+        </material>
+      </visual>
+
+      <inertial>
+        <mass value="0.01" />
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001" />
+      </inertial>
+    </link>
+
+    <link name="${name}_optical_frame">
+    </link>
+
+    <!-- Gazebo plugin for ROS2 -->
+    <xacro:if value="${use_gazebo}">
+      <gazebo reference="${name}_link">
+        <sensor name="${name}" type="depth">
+          <update_rate>30.0</update_rate>
+          <camera>
+            <horizontal_fov>1.047</horizontal_fov>
+            <image>
+              <width>640</width>
+              <height>480</height>
+              <format>R8G8B8</format>
+            </image>
+            <clip>
+              <near>0.1</near>
+              <far>10.0</far>
+            </clip>
+          </camera>
+          <plugin name="${name}_controller" filename="libgazebo_ros_camera.so">
+            <ros>
+              <namespace>${name}</namespace>
+              <remapping>image_raw:=image_raw</remapping>
+              <remapping>camera_info:=camera_info</remapping>
+              <remapping>depth/image_raw:=depth/image_raw</remapping>
+              <remapping>depth/camera_info:=depth/camera_info</remapping>
+              <remapping>points:=points</remapping>
+            </ros>
+            <camera_name>${name}</camera_name>
+            <frame_name>${name}_optical_frame</frame_name>
+            <hack_baseline>0.07</hack_baseline>
+            <min_depth>0.1</min_depth>
+            <max_depth>10.0</max_depth>
+          </plugin>
+        </sensor>
+      </gazebo>
+    </xacro:if>
+
+  </xacro:macro>
+  
+</robot>
