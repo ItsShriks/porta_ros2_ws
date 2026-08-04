@@ -22,8 +22,11 @@ import mujoco
 from mujoco import viewer
 import numpy as np
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-MODEL_PATH  = SCRIPT_DIR / "mmo_700.xml"
+# Absolute path to the repository root directory (one level up from scripts/)
+REPO_DIR = Path(__file__).resolve().parent.parent
+
+# Path to the XML model inside the robots folder
+MODEL_PATH = REPO_DIR / "robots" / "mmo_700.xml"
 
 # ---------- Wheel actuator indices (actuator list order) ----------
 WHEEL_FL = 8
@@ -123,12 +126,9 @@ def main() -> None:
     print("  Sensors: IMU (accel/gyro), LiDAR×2, wheel encoders, arm joint pos/vel")
     print("  Cameras: pan_tilt_cam, wrist_cam\n")
 
-    with viewer.launch_passive(model, data) as v:
-        v.cam.lookat[:]  = [1.5, 0.0, 0.8]
-        v.cam.distance   = 3.0
-        v.cam.elevation  = -20
+    if True:
 
-        while v.is_running():
+        for step_count_loop in range(12000):
             mujoco.mj_step(model, data)
             step_count += 1
 
@@ -166,19 +166,19 @@ def main() -> None:
                 if ik_iterations > 1000:
                     state = "REACHING"
                     print("\nArm at pre-reach pose. Performing active perception...")
-                    
+
                     # Update scene with true physics state so renderer can see it
                     mujoco.mj_forward(model, data)
-                    
+
                     # Render RGB and Depth from wrist_cam
                     renderer.disable_depth_rendering()
                     renderer.update_scene(data, camera="wrist_cam")
                     rgb = renderer.render()
-                    
+
                     renderer.enable_depth_rendering()
                     renderer.update_scene(data, camera="wrist_cam")
                     depth = renderer.render()
-                    
+
                     # Segment red box
                     mask = (rgb[:, :, 0] > 150) & (rgb[:, :, 1] < 100) & (rgb[:, :, 2] < 100)
                     ys, xs = np.where(mask)
@@ -189,27 +189,27 @@ def main() -> None:
                         med_y = int(np.median(ys))
                         med_x = int(np.median(xs))
                         d = depth[med_y, med_x]
-                        
+
                         cam_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, "wrist_cam")
                         fovy = model.cam_fovy[cam_id]
                         f = 0.5 * 480 / np.tan(np.deg2rad(fovy) / 2)
                         cx, cy = 640 / 2.0, 480 / 2.0
-                        
+
                         # Project pixel to 3D in camera frame
                         x_cam = (med_x - cx) * d / f
                         y_cam = (cy - med_y) * d / f
                         z_cam = -d
                         pt_cam = np.array([x_cam, y_cam, z_cam])
-                        
+
                         # Transform to world frame
                         cam_pos = data.cam_xpos[cam_id]
                         cam_mat = data.cam_xmat[cam_id].reshape(3, 3)
                         surface_pt_world = cam_pos + cam_mat @ pt_cam
-                        
+
                         # Depth hits the top surface (z approx 0.84), subtract half box height (0.02)
                         perceived_box_pos = surface_pt_world.copy()
                         perceived_box_pos[2] -= 0.02
-                        
+
                         print(f"  Perceived box center: {perceived_box_pos}")
                         print(f"  Ground truth center:  {data.xpos[box_id]}")
                         err = np.linalg.norm(perceived_box_pos - data.xpos[box_id])
@@ -219,15 +219,15 @@ def main() -> None:
                         try:
                             import matplotlib.pyplot as plt
                             fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-                            
+
                             ax[0].imshow(rgb)
                             ax[0].set_title("Wrist Cam: RGB")
                             ax[0].plot(med_x, med_y, 'g+', markersize=20, markeredgewidth=3)
-                            
+
                             ax[1].imshow(mask, cmap='gray')
                             ax[1].set_title("Red Mask & Perceived Center")
                             ax[1].plot(med_x, med_y, 'g+', markersize=20, markeredgewidth=3)
-                            
+
                             plt.show(block=False)
                             plt.pause(0.1) # Allow the window to render
                         except ImportError:
@@ -364,7 +364,6 @@ def main() -> None:
                     state = "DONE"
                     print(f"✅ Task complete. Box Z = {data.xpos[box_id][2]:.3f} m")
 
-            v.sync()
             time.sleep(model.opt.timestep)
 
 

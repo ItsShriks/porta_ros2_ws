@@ -1,17 +1,32 @@
+#!/usr/bin/env python3
+from pathlib import Path
 import mujoco
 import numpy as np
 
-model = mujoco.MjModel.from_xml_path("mmo_700.xml")
+# Resolve repo root and model path
+REPO_DIR = Path(__file__).resolve().parent.parent
+MODEL_PATH = REPO_DIR / "robots" / "mmo_700.xml"
+
+model = mujoco.MjModel.from_xml_path(str(MODEL_PATH))
 data = mujoco.MjData(model)
 mujoco.mj_resetData(model, data)
 mujoco.mj_forward(model, data)
 
 pinch_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "pinch")
-ARM_JOINTS = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]
+ARM_JOINTS = [
+    "shoulder_pan_joint",
+    "shoulder_lift_joint",
+    "elbow_joint",
+    "wrist_1_joint",
+    "wrist_2_joint",
+    "wrist_3_joint",
+]
 jids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn) for jn in ARM_JOINTS]
 q_ids = [model.jnt_qposadr[jid] for jid in jids]
 
-base_q_adr = model.jnt_qposadr[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "floating_base")]
+base_q_adr = model.jnt_qposadr[
+    mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "floating_base")
+]
 data.qpos[base_q_adr] = 1.3
 mujoco.mj_forward(model, data)
 

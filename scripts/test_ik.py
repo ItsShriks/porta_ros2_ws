@@ -1,7 +1,13 @@
+#!/usr/bin/env python3
+from pathlib import Path
 import mujoco
 import numpy as np
 
-model = mujoco.MjModel.from_xml_path("mmo_700.xml")
+# Resolve repo root and model path
+REPO_DIR = Path(__file__).resolve().parent.parent
+MODEL_PATH = REPO_DIR / "robots" / "mmo_700.xml"
+
+model = mujoco.MjModel.from_xml_path(str(MODEL_PATH))
 data = mujoco.MjData(model)
 mujoco.mj_resetData(model, data)
 mujoco.mj_forward(model, data)
@@ -9,14 +15,23 @@ mujoco.mj_forward(model, data)
 base_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "base_link")
 box_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "target_box")
 pinch_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "pinch")
-ARM_JOINTS = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]
+ARM_JOINTS = [
+    "shoulder_pan_joint",
+    "shoulder_lift_joint",
+    "elbow_joint",
+    "wrist_1_joint",
+    "wrist_2_joint",
+    "wrist_3_joint",
+]
 jids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, jn) for jn in ARM_JOINTS]
 q_ids = [model.jnt_qposadr[jid] for jid in jids]
 dof_ids = [model.jnt_dofadr[jid] for jid in jids]
 
 # Base x to 1.3m (as if driven)
 # Assuming base freejoint starts at 0, 0, -0.01
-base_q_adr = model.jnt_qposadr[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "floating_base")]
+base_q_adr = model.jnt_qposadr[
+    mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "floating_base")
+]
 data.qpos[base_q_adr] = 1.3
 mujoco.mj_forward(model, data)
 
@@ -40,16 +55,22 @@ for it in range(3000):
     R_err = R_target @ R_cur.T
     angle = np.arccos(np.clip((np.trace(R_err) - 1) / 2, -1.0, 1.0))
     if abs(angle) > 1e-6:
-        ax = np.array([R_err[2, 1] - R_err[1, 2], R_err[0, 2] - R_err[2, 0], R_err[1, 0] - R_err[0, 1]]) / (2 * np.sin(angle))
+        ax = np.array(
+            [
+                R_err[2, 1] - R_err[1, 2],
+                R_err[0, 2] - R_err[2, 0],
+                R_err[1, 0] - R_err[0, 1],
+            ]
+        ) / (2 * np.sin(angle))
         rot_err = angle * ax
     else:
         rot_err = np.zeros(3)
-        
+
     err6 = np.concatenate([pos_err, 0.3 * rot_err])
     if np.linalg.norm(pos_err) < 0.012 and np.linalg.norm(rot_err) < 0.15:
         print(f"Converged in {it} iterations")
         break
-        
+
     Jp = np.zeros((3, model.nv))
     Jr = np.zeros((3, model.nv))
     mujoco.mj_jacSite(model, d_ik, Jp, Jr, pinch_id)

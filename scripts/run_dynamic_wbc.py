@@ -12,8 +12,12 @@ from mujoco import viewer
 import numpy as np
 import math
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-MODEL_PATH  = SCRIPT_DIR / "mmo_700_wbc.xml"
+# Absolute path to the repository root directory (one level up from scripts/)
+REPO_DIR = Path(__file__).resolve().parent.parent
+
+# Path to the XML model inside the robots folder
+MODEL_PATH = REPO_DIR / "robots" / "mmo_700_wbc.xml"
+
 
 # WBC Joints
 WBC_JOINTS = [
@@ -58,11 +62,11 @@ def main():
         mujoco.mj_forward(model, data)
 
     pinch_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "pinch")
-    
+
     # Get DoF addresses for WBC joints
     jids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, j) for j in WBC_JOINTS]
     dof_ids = [model.jnt_dofadr[jid] for jid in jids]
-    
+
     # Get actuator IDs for motor control
     motor_act_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, a) for a in MOTOR_ACTUATORS]
 
@@ -86,14 +90,14 @@ def main():
             data.ctrl[i] = 0.0
 
     print("Starting Dynamic WBC...")
-    
+
     # Memory allocation for M
     M = np.zeros((model.nv, model.nv))
-    
+
     # Pre-calculate damping matrix for null-space posture
     # We want to keep joints near their initial position
     q_home = data.qpos.copy()
-    
+
     with viewer.launch_passive(model, data) as v:
         v.cam.lookat[:]  = [1.5, 0.0, 0.8]
         v.cam.distance   = 3.0
@@ -103,11 +107,11 @@ def main():
         while v.is_running():
             t += model.opt.timestep
             state_ticks += 1
-            
+
             box_pos = data.xpos[box_id]
             current_pos = data.site_xpos[pinch_id]
             current_R = data.site_xmat[pinch_id].reshape(3, 3)
-            
+
             # 1. Target kinematics
             if state == "REACHING":
                 target_pos = box_pos.copy()
@@ -115,7 +119,7 @@ def main():
                 target_vel = np.zeros(3)
                 target_acc = np.zeros(3)
                 data.ctrl[gripper_act_id] = 0.0
-                
+
                 if np.linalg.norm(target_pos - current_pos) < 0.015:
                     state = "GRASPING"
                     state_ticks = 0
@@ -126,7 +130,7 @@ def main():
                 target_vel = np.zeros(3)
                 target_acc = np.zeros(3)
                 data.ctrl[gripper_act_id] = 255.0
-                
+
                 if state_ticks > 500:
                     state = "LIFTING"
                     state_ticks = 0
@@ -138,55 +142,56 @@ def main():
                 target_vel = np.zeros(3)
                 target_acc = np.zeros(3)
                 data.ctrl[gripper_act_id] = 255.0
-            
+
             # 2. Current state
             current_pos = data.site_xpos[pinch_id]
             current_R = data.site_xmat[pinch_id].reshape(3, 3)
-            
+
             # 3. Compute Full System Jacobian (6 x nv)
             Jp = np.zeros((3, model.nv))
             Jr = np.zeros((3, model.nv))
             mujoco.mj_jacSite(model, data, Jp, Jr, pinch_id)
             J_full = np.vstack([Jp, Jr])
-            
+
             current_vel = J_full @ data.qvel
-            
+
             # 4. Cartesian Errors
             pos_err = target_pos - current_pos
             rot_err = get_rotation_error(R_target, current_R)
-            
+
             vel_err = np.concatenate([target_vel, np.zeros(3)]) - current_vel
-            
+
             # 5. Desired Cartesian Acceleration (PD Control)
             Kp = 150.0
             Kd = 25.0
-            
+
             err_6d = np.concatenate([pos_err, rot_err])
             a_des = np.concatenate([target_acc, np.zeros(3)]) + Kp * err_6d + Kd * vel_err
-            
+
             # 6. Mass Matrix and Bias Forces
-            mujoco.mj_fullM(model, data, M)
+            mujoco.mj_fullM(model, M, data.qM)
+
             # Add small regularizer to M to prevent singularity with passive joints
-            M_reg = M + np.eye(model.nv) * 1e-4 
+            M_reg = M + np.eye(model.nv) * 1e-4
             M_inv = np.linalg.inv(M_reg)
-            
+
             h = data.qfrc_bias
-            
+
             # 7. Task-Space Inertia Matrix (Lambda)
             lam_damping = 0.01
             Lambda_inv = J_full @ M_inv @ J_full.T + lam_damping**2 * np.eye(6)
             Lambda = np.linalg.inv(Lambda_inv)
-            
+
             # 8. Compute Task Torques
             # tau_task = J^T * Lambda * a_des
             tau_task = J_full.T @ Lambda @ a_des
-            
+
             # 9. Null-Space Posture Control (Keep joints near home position)
             # tau_null = N^T * tau_0
             # N = I - J^T * (J^T)^+ = I - J^T * Lambda * J * M^-1
             J_bar = M_inv @ J_full.T @ Lambda
             N_T = np.eye(model.nv) - J_full.T @ J_bar.T
-            
+
             # Simple PD on joint posture
             Kp_joint = 10.0
             Kd_joint = 2.0
@@ -198,12 +203,12 @@ def main():
                 # Ensure we handle qpos mapping correctly (our 9 joints are 1D so qposadr == dofadr mapping is 1-to-1)
                 qpos_idx = model.jnt_qposadr[jids[i]]
                 tau_0[dof] = Kp_joint * (q_home[qpos_idx] - data.qpos[qpos_idx]) - Kd_joint * data.qvel[dof]
-                
+
             tau_null = N_T @ tau_0
-            
+
             # 10. Total Command Torques
             tau_total = tau_task + tau_null + h
-            
+
             # 11. Command Motor Actuators
             for i, act_id in enumerate(motor_act_ids):
                 dof = dof_ids[i]

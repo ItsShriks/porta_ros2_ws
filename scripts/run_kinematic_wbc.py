@@ -12,8 +12,11 @@ from mujoco import viewer
 import numpy as np
 import math
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-MODEL_PATH  = SCRIPT_DIR / "mmo_700_wbc.xml"
+# Absolute path to the repository root directory (one level up from scripts/)
+REPO_DIR = Path(__file__).resolve().parent.parent
+
+# Path to the XML model inside the robots folder
+MODEL_PATH = REPO_DIR / "robots" / "mmo_700_wbc.xml"
 
 # WBC Joints
 WBC_JOINTS = [
@@ -60,11 +63,11 @@ def main():
         mujoco.mj_forward(model, data)
 
     pinch_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "pinch")
-    
+
     # Get DoF addresses for WBC joints
     jids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, j) for j in WBC_JOINTS]
     dof_ids = [model.jnt_dofadr[jid] for jid in jids]
-    
+
     # Get actuator IDs for velocity control
     vel_act_ids = [mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, a) for a in VEL_ACTUATORS]
 
@@ -88,7 +91,7 @@ def main():
             data.ctrl[i] = 0.0
 
     print("Starting Kinematic WBC...")
-    
+
     with viewer.launch_passive(model, data) as v:
         v.cam.lookat[:]  = [1.5, 0.0, 0.8]
         v.cam.distance   = 3.0
@@ -98,17 +101,17 @@ def main():
         while v.is_running():
             t += model.opt.timestep
             state_ticks += 1
-            
+
             box_pos = data.xpos[box_id]
             current_pos = data.site_xpos[pinch_id]
             current_R = data.site_xmat[pinch_id].reshape(3, 3)
-            
+
             if state == "REACHING":
                 target_pos = box_pos.copy()
                 target_pos[2] += 0.005
                 target_vel = np.zeros(3)
                 data.ctrl[gripper_act_id] = 0.0
-                
+
                 if np.linalg.norm(target_pos - current_pos) < 0.015:
                     state = "GRASPING"
                     state_ticks = 0
@@ -118,7 +121,7 @@ def main():
                 target_pos[2] += 0.005
                 target_vel = np.zeros(3)
                 data.ctrl[gripper_act_id] = 255.0
-                
+
                 if state_ticks > 500:
                     state = "LIFTING"
                     state_ticks = 0
@@ -129,15 +132,15 @@ def main():
                 target_pos = lift_target
                 target_vel = np.zeros(3)
                 data.ctrl[gripper_act_id] = 255.0
-            
+
             # Current end-effector state
             current_pos = data.site_xpos[pinch_id]
             current_R = data.site_xmat[pinch_id].reshape(3, 3)
-            
+
             # 2. Compute Cartesian Error (Position + Orientation)
             pos_err = target_pos - current_pos
             rot_err = get_rotation_error(R_target, current_R)
-            
+
             # Combine into a 6D desired twist (Proportional feedback + Feedforward)
             Kp_pos = 5.0
             Kp_rot = 5.0
@@ -145,22 +148,22 @@ def main():
                 target_vel + Kp_pos * pos_err,
                 Kp_rot * rot_err
             ])
-            
+
             # 3. Compute Full System Jacobian (9 DoFs: Base + Arm)
             Jp = np.zeros((3, model.nv))
             Jr = np.zeros((3, model.nv))
             mujoco.mj_jacSite(model, data, Jp, Jr, pinch_id)
-            
+
             J_full = np.vstack([Jp, Jr])
-            
+
             # Extract only the columns corresponding to our WBC joints
             J_wbc = J_full[:, dof_ids]
-            
+
             # 4. Compute Joint Velocities using Damped Pseudo-Inverse
             lam = 0.05  # Damping factor for singularities
             J_pinv = J_wbc.T @ np.linalg.solve(J_wbc @ J_wbc.T + lam**2 * np.eye(6), np.eye(6))
             dq_wbc = J_pinv @ v_des
-            
+
             # 5. Command Velocity Actuators
             for i, act_id in enumerate(vel_act_ids):
                 data.ctrl[act_id] = dq_wbc[i]

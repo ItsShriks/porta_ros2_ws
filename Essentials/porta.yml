@@ -1,4 +1,4 @@
-name: mujoco
+name: porta
 channels:
   - defaults
 dependencies:
@@ -41,4 +41,3 @@ dependencies:
       - scipy==1.15.3
       - six==1.17.0
       - zipp==4.1.0
-prefix: /home/shrikar/anaconda3/envs/mujoco
