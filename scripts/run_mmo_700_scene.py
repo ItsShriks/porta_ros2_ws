@@ -109,7 +109,8 @@ def main() -> None:
     q_ids   = [model.jnt_qposadr[jid] for jid in jids]
     dof_ids = [model.jnt_dofadr[jid]  for jid in jids]
 
-    table_x = 2.0
+    table_xs = [2.0, 4.0, 6.0]
+    current_table_idx = 0
     state   = "DRIVING"
     ik_iterations = 0
     target_q      = None
@@ -149,14 +150,15 @@ def main() -> None:
                 data.ctrl[WHEEL_BR] = APPROACH_SPEED
 
                 robot_x = data.xpos[base_id][0]
-                if robot_x >= (table_x - STOP_DISTANCE):
+                target_table_x = table_xs[current_table_idx]
+                if robot_x >= (target_table_x - STOP_DISTANCE):
                     # Stop wheels
                     data.ctrl[WHEEL_FL] = 0.0
                     data.ctrl[WHEEL_FR] = 0.0
                     data.ctrl[WHEEL_BL] = 0.0
                     data.ctrl[WHEEL_BR] = 0.0
                     state = "PREPARE_REACH"
-                    print(f"\nRobot stopped at x={robot_x:.3f} m. Preparing arm for top-down reach...")
+                    print(f"\nRobot stopped at x={robot_x:.3f} m (Table {current_table_idx + 1}). Preparing arm for top-down reach...")
                     # Pre-reach pose: elbow-up overhead config for top-down approach
                     # shoulder_pan=0 (forward), shoulder_lift=-2.0 (arm back/up),
                     # elbow=1.57 (elbow bent up), wrist_1=-1.0, wrist_2=-1.57, wrist_3=0
@@ -186,8 +188,11 @@ def main() -> None:
                     mask = (rgb[:, :, 0] > 150) & (rgb[:, :, 1] < 100) & (rgb[:, :, 2] < 100)
                     ys, xs = np.where(mask)
                     if len(ys) == 0:
-                        print("  WARNING: No red pixels found! Falling back to ground truth.")
-                        perceived_box_pos = data.xpos[box_id].copy()
+                        print("  No red pixels found! No box on this table.")
+                        state = "RETRACTING"
+                        ik_iterations = 0
+                        data.ctrl[0:6] = [0.0, -1.57, 1.57, -1.57, -1.57, 0.0]
+                        print("  Retracting arm to driving pose...")
                     else:
                         med_y = int(np.median(ys))
                         med_x = int(np.median(xs))
@@ -218,25 +223,20 @@ def main() -> None:
                         err = np.linalg.norm(perceived_box_pos - data.xpos[box_id])
                         print(f"  Perception error:     {err:.4f} m")
 
-                        # --- Visualization of Perception ---
-                        try:
-                            import matplotlib.pyplot as plt
-                            fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+                        print("Computing IK to reach perceived target...")
+                        state = "REACHING"
+                        ik_iterations = 0
 
-                            ax[0].imshow(rgb)
-                            ax[0].set_title("Wrist Cam: RGB")
-                            ax[0].plot(med_x, med_y, 'g+', markersize=20, markeredgewidth=3)
-
-                            ax[1].imshow(mask, cmap='gray')
-                            ax[1].set_title("Red Mask & Perceived Center")
-                            ax[1].plot(med_x, med_y, 'g+', markersize=20, markeredgewidth=3)
-
-                            # plt.show(block=False)
-                            # plt.pause(0.1) # Allow the window to render
-                        except ImportError:
-                            print("  (matplotlib not installed, skipping perception visualization)")
-
-                    print("Computing IK to reach perceived target...")
+            elif state == "RETRACTING":
+                ik_iterations += 1
+                if ik_iterations > 500:  # Wait 1 sec for arm to retract
+                    current_table_idx += 1
+                    if current_table_idx < len(table_xs):
+                        print(f"Moving to table {current_table_idx + 1}...")
+                        state = "DRIVING"
+                    else:
+                        print("Checked all tables. Done.")
+                        state = "DONE"
                     ik_iterations = 0
 
             elif state == "REACHING":
