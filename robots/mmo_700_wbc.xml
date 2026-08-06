@@ -622,6 +622,24 @@
     <jointvel name="wrist_3_vel"       joint="wrist_3_joint" />
   </sensor>
 
-
+  <!-- ===== KEYFRAME ===== -->
+  <keyframe>
+    <!--
+      qpos layout (34 DOFs):
+        box freejoint  (7): pos=2.0 0 0.82, quat=1 0 0 0
+        base joints    (3): base_x base_y base_yaw
+        casters/wheels (8): 0 0 0 0 0 0 0 0
+        arm joints     (6): shoulder_pan shoulder_lift elbow wrist_1 wrist_2 wrist_3
+        gripper        (8): right_driver right_coupler right_spring right_follower left_driver left_coupler left_spring left_follower
+        pan_tilt       (2): tilt pan
+    -->
+    <key name="home"
+         qpos="2.0 0 0.82 1 0 0 0
+               0 0 0
+               0 0 0 0 0 0 0 0
+               0 -1.559 1.581 -1.565 -1.570 0
+               0 0 0 0 0 0 0 0
+               0 0" />
+  </keyframe>
 
 </mujoco>
