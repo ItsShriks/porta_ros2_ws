@@ -1,0 +1,282 @@
+commit fa7d21f5be4d31c9920b86a4a0018b68532e0961
+Author: Shrikar Nakhye <nakhyeshrikar@icloud.com>
+Date:   2026-07-28 15:56:06
+
+    Initial commit
+
+ .gitignore | 51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ README.md  |  1 +
+ 2 files changed, 52 insertions(+)
+
+commit 178161157b61b62dc4c5f3c21aff194639f8ab67
+Author: ItsShriks <nakhyeshrikar@icloud.com>
+Date:   2026-07-28 16:03:07
+
+    Initial Commit
+
+ README.md                                          |     66 +-
+ UR5e_Integration.md                                |     83 +
+ WBC.md                                             |     48 +
+ launch_arm.py                                      |     12 +
+ mmo_700.urdf                                       |   1302 +
+ mmo_700.xml                                        |    658 +
+ mmo_700/meshes/MPO-700-BODY.dae                    |    453 +
+ mmo_700/meshes/MPO-700-BODY.stl                    |    Bin 0 -> 215884 bytes
+ mmo_700/meshes/MPO-700-BODY_scaled.stl             |    Bin 0 -> 215884 bytes
+ mmo_700/meshes/MPO-700-HEAD.dae                    |    112 +
+ mmo_700/meshes/MPO-700-HEAD.stl                    |    Bin 0 -> 47284 bytes
+ mmo_700/meshes/MPO-700-WHEEL.dae                   |    213 +
+ mmo_700/meshes/MPO-700-WHEEL.stl                   |    Bin 0 -> 67384 bytes
+ mmo_700/meshes/SICK-MICROSCAN3.dae                 |    648 +
+ mmo_700/meshes/SICK-MICROSCAN3.stl                 |    Bin 0 -> 1932684 bytes
+ mmo_700/meshes/SICK-S300.dae                       |    343 +
+ mmo_700/meshes/SICK-S300.stl                       |    Bin 0 -> 198234 bytes
+ mmo_700/meshes/base.dae                            |    160 +
+ mmo_700/meshes/base.stl                            |    Bin 0 -> 100084 bytes
+ mmo_700/meshes/cabin.dae                           |    190 +
+ mmo_700/meshes/cabin.stl                           |    Bin 0 -> 52284 bytes
+ .../d405/UR5_LastJointSensor_D405_Psyonic.STL      |    Bin 0 -> 228784 bytes
+ mmo_700/meshes/cameras/d405/d405.stl               |    Bin 0 -> 194684 bytes
+ mmo_700/meshes/cameras/d435/d435.dae               |    923 +
+ mmo_700/meshes/cameras/d435/d435.stl               |    Bin 0 -> 11559384 bytes
+ .../dynamixel/dynamixel_bracket_fr12_h101.dae      |     88 +
+ .../dynamixel/dynamixel_bracket_fr12_h101.stl      |    Bin 0 -> 313484 bytes
+ .../dynamixel_bracket_fr12_h101_convex_hull.dae    |     56 +
+ .../dynamixel_bracket_fr12_h101_convex_hull.stl    |    Bin 0 -> 21384 bytes
+ .../cameras/dynamixel/dynamixel_motor_xl-430.dae   |     88 +
+ .../cameras/dynamixel/dynamixel_motor_xl-430.stl   |    Bin 0 -> 2594384 bytes
+ .../dynamixel_motor_xl-430_convex_hull.dae         |     56 +
+ .../dynamixel_motor_xl-430_convex_hull.stl         |    Bin 0 -> 42184 bytes
+ mmo_700/meshes/finger_base_link_simple.dae         |     56 +
+ mmo_700/meshes/finger_base_link_simple.stl         |    Bin 0 -> 123584 bytes
+ mmo_700/meshes/finger_dist_link_simple.dae         |     56 +
+ mmo_700/meshes/finger_dist_link_simple.stl         |    Bin 0 -> 603134 bytes
+ mmo_700/meshes/finger_palm_link.dae                |     56 +
+ mmo_700/meshes/finger_palm_link.stl                |    Bin 0 -> 396184 bytes
+ mmo_700/meshes/finger_prox_link_simple.dae         |     56 +
+ mmo_700/meshes/finger_prox_link_simple.stl         |    Bin 0 -> 443784 bytes
+ mmo_700/meshes/forearm.dae                         |    597 +
+ mmo_700/meshes/forearm.stl                         |    Bin 0 -> 1316134 bytes
+ mmo_700/meshes/omd-d18-tip.dae                     |     56 +
+ mmo_700/meshes/omd-d18-tip.stl                     |    Bin 0 -> 360384 bytes
+ mmo_700/meshes/palm.STL                            |    Bin 0 -> 677984 bytes
+ mmo_700/meshes/palm_link_simple.dae                |     56 +
+ mmo_700/meshes/palm_link_simple.stl                |    Bin 0 -> 84884 bytes
+ mmo_700/meshes/robotiq_2f85/base.stl               |    Bin 0 -> 1712484 bytes
+ mmo_700/meshes/robotiq_2f85/base_mount.stl         |    Bin 0 -> 1091784 bytes
+ mmo_700/meshes/robotiq_2f85/coupler.stl            |    Bin 0 -> 89084 bytes
+ mmo_700/meshes/robotiq_2f85/driver.stl             |    Bin 0 -> 67084 bytes
+ mmo_700/meshes/robotiq_2f85/follower.stl           |    Bin 0 -> 110484 bytes
+ mmo_700/meshes/robotiq_2f85/pad.stl                |    Bin 0 -> 15084 bytes
+ mmo_700/meshes/robotiq_2f85/silicone_pad.stl       |    Bin 0 -> 15084 bytes
+ mmo_700/meshes/robotiq_2f85/spring_link.stl        |    Bin 0 -> 84884 bytes
+ mmo_700/meshes/shoulder.dae                        |    445 +
+ mmo_700/meshes/shoulder.stl                        |    Bin 0 -> 737384 bytes
+ mmo_700/meshes/upperarm.dae                        |    954 +
+ mmo_700/meshes/upperarm.stl                        |    Bin 0 -> 1049784 bytes
+ mmo_700/meshes/ur5e_assets/CHANGELOG.md            |      6 +
+ mmo_700/meshes/ur5e_assets/LICENSE                 |     26 +
+ mmo_700/meshes/ur5e_assets/README.md               |     41 +
+ mmo_700/meshes/ur5e_assets/base_0.obj              |  15306 ++
+ mmo_700/meshes/ur5e_assets/base_1.obj              |  17646 +++
+ mmo_700/meshes/ur5e_assets/forearm_0.obj           |  45520 ++++++
+ mmo_700/meshes/ur5e_assets/forearm_1.obj           |   2159 +
+ mmo_700/meshes/ur5e_assets/forearm_2.obj           |  25602 ++++
+ mmo_700/meshes/ur5e_assets/forearm_3.obj           |  29961 ++++
+ mmo_700/meshes/ur5e_assets/scene.xml               |     21 +
+ mmo_700/meshes/ur5e_assets/shoulder_0.obj          |  79709 ++++++++++
+ mmo_700/meshes/ur5e_assets/shoulder_1.obj          |  15676 ++
+ mmo_700/meshes/ur5e_assets/shoulder_2.obj          |  65873 ++++++++
+ mmo_700/meshes/ur5e_assets/upperarm_0.obj          |   4342 +
+ mmo_700/meshes/ur5e_assets/upperarm_1.obj          |  29711 ++++
+ mmo_700/meshes/ur5e_assets/upperarm_2.obj          |  99001 ++++++++++++
+ mmo_700/meshes/ur5e_assets/upperarm_3.obj          | 144582 ++++++++++++++++++
+ mmo_700/meshes/ur5e_assets/ur5e.png                |    Bin 0 -> 1956670 bytes
+ mmo_700/meshes/ur5e_assets/ur5e.xml                |    136 +
+ mmo_700/meshes/ur5e_assets/wrist1_0.obj            |   7761 +
+ mmo_700/meshes/ur5e_assets/wrist1_1.obj            |  66213 ++++++++
+ mmo_700/meshes/ur5e_assets/wrist1_2.obj            |  44960 ++++++
+ mmo_700/meshes/ur5e_assets/wrist2_0.obj            |  23375 +++
+ mmo_700/meshes/ur5e_assets/wrist2_1.obj            |  57886 +++++++
+ mmo_700/meshes/ur5e_assets/wrist2_2.obj            |  57883 +++++++
+ mmo_700/meshes/ur5e_assets/wrist3.obj              |   5893 +
+ mmo_700/meshes/wrist1.dae                          |    563 +
+ mmo_700/meshes/wrist1.stl                          |    Bin 0 -> 672234 bytes
+ mmo_700/meshes/wrist2.dae                          |    346 +
+ mmo_700/meshes/wrist2.stl                          |    Bin 0 -> 1868484 bytes
+ mmo_700/meshes/wrist3.dae                          |    318 +
+ mmo_700/meshes/wrist3.stl                          |    Bin 0 -> 60084 bytes
+ mmo_700/mmo_700.urdf.xacro                         |     92 +
+ mmo_700/mmo_700_processed.urdf                     |   1279 +
+ mmo_700/urdf/macro/cabinet.xacro                   |     36 +
+ mmo_700/urdf/macro/camera.xacro                    |     39 +
+ mmo_700/urdf/macro/common.gazebo.xacro             |     41 +
+ mmo_700/urdf/macro/depth_camera_macro.xacro        |     86 +
+ mmo_700/urdf/macro/gripper.transmission.xacro      |     52 +
+ mmo_700/urdf/macro/imu.xacro                       |     23 +
+ mmo_700/urdf/macro/micro_scan.xacro                |     32 +
+ mmo_700/urdf/macro/mpo_700_body.xacro              |     29 +
+ mmo_700/urdf/macro/mpo_700_caster.xacro            |    136 +
+ mmo_700/urdf/macro/mpo_700_gazebo.xacro            |    186 +
+ mmo_700/urdf/macro/mpo_700_wheel.xacro             |     45 +
+ mmo_700/urdf/macro/sick_S300.xacro                 |     33 +
+ mmo_700/urdf/macro/ultrasonic.xacro                |     24 +
+ mmo_700/urdf/mmo_700_body.urdf.xacro               |    153 +
+ mmo_700/urdf/mmo_700_gazebo.urdf.xacro             |     81 +
+ mmo_700_wbc.xml                                    |    627 +
+ mujoco.yml                                         |     44 +
+ requirements.txt                                   |      2 +
+ run_dynamic_wbc.py                                 |    217 +
+ run_kinematic_wbc.py                               |    173 +
+ run_mmo_700_grasp.py                               |    372 +
+ run_mmo_700_grasp_headless.py                      |    368 +
+ run_mmo_700_scene.py                               |    372 +
+ test_ik.py                                         |     67 +
+ test_perception.py                                 |     75 +
+ test_traj.py                                       |     31 +
+ 120 files changed, 853061 insertions(+), 1 deletion(-)
+
+commit cda9942f1367ee893c999892e6eb27a4768d0a95
+Author: ItsShriks <nakhyeshrikar@icloud.com>
+Date:   2026-08-04 12:02:16
+
+    Path Resolve
+
+ .DS_Store                                          | Bin 0 -> 6148 bytes
+ mujoco.yml => Essentials/porta.yml                 |   3 +-
+ Essentials/porta_macOS.yml                         |  31 ++++++++++
+ requirements.txt => Essentials/requirements.txt    |   0
+ UR5e_Integration.md => docs/UR5e_Integration.md    |   0
+ WBC.md => docs/WBC.md                              |   0
+ mmo_700.urdf => robots/mmo_700.urdf                |   0
+ mmo_700.xml => robots/mmo_700.xml                  |   0
+ robots/mmo_700/.DS_Store                           | Bin 0 -> 6148 bytes
+ .../mmo_700}/meshes/MPO-700-BODY.dae               |   0
+ .../mmo_700}/meshes/MPO-700-BODY.stl               | Bin
+ .../mmo_700}/meshes/MPO-700-BODY_scaled.stl        | Bin
+ .../mmo_700}/meshes/MPO-700-HEAD.dae               |   0
+ .../mmo_700}/meshes/MPO-700-HEAD.stl               | Bin
+ .../mmo_700}/meshes/MPO-700-WHEEL.dae              |   0
+ .../mmo_700}/meshes/MPO-700-WHEEL.stl              | Bin
+ .../mmo_700}/meshes/SICK-MICROSCAN3.dae            |   0
+ .../mmo_700}/meshes/SICK-MICROSCAN3.stl            | Bin
+ {mmo_700 => robots/mmo_700}/meshes/SICK-S300.dae   |   0
+ {mmo_700 => robots/mmo_700}/meshes/SICK-S300.stl   | Bin
+ {mmo_700 => robots/mmo_700}/meshes/base.dae        |   0
+ {mmo_700 => robots/mmo_700}/meshes/base.stl        | Bin
+ {mmo_700 => robots/mmo_700}/meshes/cabin.dae       |   0
+ {mmo_700 => robots/mmo_700}/meshes/cabin.stl       | Bin
+ .../d405/UR5_LastJointSensor_D405_Psyonic.STL      | Bin
+ .../mmo_700}/meshes/cameras/d405/d405.stl          | Bin
+ .../mmo_700}/meshes/cameras/d435/d435.dae          |   0
+ .../mmo_700}/meshes/cameras/d435/d435.stl          | Bin
+ .../dynamixel/dynamixel_bracket_fr12_h101.dae      |   0
+ .../dynamixel/dynamixel_bracket_fr12_h101.stl      | Bin
+ .../dynamixel_bracket_fr12_h101_convex_hull.dae    |   0
+ .../dynamixel_bracket_fr12_h101_convex_hull.stl    | Bin
+ .../cameras/dynamixel/dynamixel_motor_xl-430.dae   |   0
+ .../cameras/dynamixel/dynamixel_motor_xl-430.stl   | Bin
+ .../dynamixel_motor_xl-430_convex_hull.dae         |   0
+ .../dynamixel_motor_xl-430_convex_hull.stl         | Bin
+ .../mmo_700}/meshes/finger_base_link_simple.dae    |   0
+ .../mmo_700}/meshes/finger_base_link_simple.stl    | Bin
+ .../mmo_700}/meshes/finger_dist_link_simple.dae    |   0
+ .../mmo_700}/meshes/finger_dist_link_simple.stl    | Bin
+ .../mmo_700}/meshes/finger_palm_link.dae           |   0
+ .../mmo_700}/meshes/finger_palm_link.stl           | Bin
+ .../mmo_700}/meshes/finger_prox_link_simple.dae    |   0
+ .../mmo_700}/meshes/finger_prox_link_simple.stl    | Bin
+ {mmo_700 => robots/mmo_700}/meshes/forearm.dae     |   0
+ {mmo_700 => robots/mmo_700}/meshes/forearm.stl     | Bin
+ {mmo_700 => robots/mmo_700}/meshes/omd-d18-tip.dae |   0
+ {mmo_700 => robots/mmo_700}/meshes/omd-d18-tip.stl | Bin
+ {mmo_700 => robots/mmo_700}/meshes/palm.STL        | Bin
+ .../mmo_700}/meshes/palm_link_simple.dae           |   0
+ .../mmo_700}/meshes/palm_link_simple.stl           | Bin
+ .../mmo_700}/meshes/robotiq_2f85/base.stl          | Bin
+ .../mmo_700}/meshes/robotiq_2f85/base_mount.stl    | Bin
+ .../mmo_700}/meshes/robotiq_2f85/coupler.stl       | Bin
+ .../mmo_700}/meshes/robotiq_2f85/driver.stl        | Bin
+ .../mmo_700}/meshes/robotiq_2f85/follower.stl      | Bin
+ .../mmo_700}/meshes/robotiq_2f85/pad.stl           | Bin
+ .../mmo_700}/meshes/robotiq_2f85/silicone_pad.stl  | Bin
+ .../mmo_700}/meshes/robotiq_2f85/spring_link.stl   | Bin
+ {mmo_700 => robots/mmo_700}/meshes/shoulder.dae    |   0
+ {mmo_700 => robots/mmo_700}/meshes/shoulder.stl    | Bin
+ {mmo_700 => robots/mmo_700}/meshes/upperarm.dae    |   0
+ {mmo_700 => robots/mmo_700}/meshes/upperarm.stl    | Bin
+ .../mmo_700}/meshes/ur5e_assets/CHANGELOG.md       |   0
+ .../mmo_700}/meshes/ur5e_assets/LICENSE            |   0
+ .../mmo_700}/meshes/ur5e_assets/README.md          |   0
+ .../mmo_700}/meshes/ur5e_assets/base_0.obj         |   0
+ .../mmo_700}/meshes/ur5e_assets/base_1.obj         |   0
+ .../mmo_700}/meshes/ur5e_assets/forearm_0.obj      |   0
+ .../mmo_700}/meshes/ur5e_assets/forearm_1.obj      |   0
+ .../mmo_700}/meshes/ur5e_assets/forearm_2.obj      |   0
+ .../mmo_700}/meshes/ur5e_assets/forearm_3.obj      |   0
+ .../mmo_700}/meshes/ur5e_assets/scene.xml          |   0
+ .../mmo_700}/meshes/ur5e_assets/shoulder_0.obj     |   0
+ .../mmo_700}/meshes/ur5e_assets/shoulder_1.obj     |   0
+ .../mmo_700}/meshes/ur5e_assets/shoulder_2.obj     |   0
+ .../mmo_700}/meshes/ur5e_assets/upperarm_0.obj     |   0
+ .../mmo_700}/meshes/ur5e_assets/upperarm_1.obj     |   0
+ .../mmo_700}/meshes/ur5e_assets/upperarm_2.obj     |   0
+ .../mmo_700}/meshes/ur5e_assets/upperarm_3.obj     |   0
+ .../mmo_700}/meshes/ur5e_assets/ur5e.png           | Bin
+ .../mmo_700}/meshes/ur5e_assets/ur5e.xml           |   0
+ .../mmo_700}/meshes/ur5e_assets/wrist1_0.obj       |   0
+ .../mmo_700}/meshes/ur5e_assets/wrist1_1.obj       |   0
+ .../mmo_700}/meshes/ur5e_assets/wrist1_2.obj       |   0
+ .../mmo_700}/meshes/ur5e_assets/wrist2_0.obj       |   0
+ .../mmo_700}/meshes/ur5e_assets/wrist2_1.obj       |   0
+ .../mmo_700}/meshes/ur5e_assets/wrist2_2.obj       |   0
+ .../mmo_700}/meshes/ur5e_assets/wrist3.obj         |   0
+ {mmo_700 => robots/mmo_700}/meshes/wrist1.dae      |   0
+ {mmo_700 => robots/mmo_700}/meshes/wrist1.stl      | Bin
+ {mmo_700 => robots/mmo_700}/meshes/wrist2.dae      |   0
+ {mmo_700 => robots/mmo_700}/meshes/wrist2.stl      | Bin
+ {mmo_700 => robots/mmo_700}/meshes/wrist3.dae      |   0
+ {mmo_700 => robots/mmo_700}/meshes/wrist3.stl      | Bin
+ {mmo_700 => robots/mmo_700}/mmo_700.urdf.xacro     |   0
+ {mmo_700 => robots/mmo_700}/mmo_700_processed.urdf |   0
+ .../mmo_700}/urdf/macro/cabinet.xacro              |   0
+ .../mmo_700}/urdf/macro/camera.xacro               |   0
+ .../mmo_700}/urdf/macro/common.gazebo.xacro        |   0
+ .../mmo_700}/urdf/macro/depth_camera_macro.xacro   |   0
+ .../mmo_700}/urdf/macro/gripper.transmission.xacro |   0
+ {mmo_700 => robots/mmo_700}/urdf/macro/imu.xacro   |   0
+ .../mmo_700}/urdf/macro/micro_scan.xacro           |   0
+ .../mmo_700}/urdf/macro/mpo_700_body.xacro         |   0
+ .../mmo_700}/urdf/macro/mpo_700_caster.xacro       |   0
+ .../mmo_700}/urdf/macro/mpo_700_gazebo.xacro       |   0
+ .../mmo_700}/urdf/macro/mpo_700_wheel.xacro        |   0
+ .../mmo_700}/urdf/macro/sick_S300.xacro            |   0
+ .../mmo_700}/urdf/macro/ultrasonic.xacro           |   0
+ .../mmo_700}/urdf/mmo_700_body.urdf.xacro          |   0
+ .../mmo_700}/urdf/mmo_700_gazebo.urdf.xacro        |   0
+ mmo_700_wbc.xml => robots/mmo_700_wbc.xml          |   0
+ run_dynamic_wbc.py => scripts/run_dynamic_wbc.py   |  63 +++++++++++----------
+ .../run_kinematic_wbc.py                           |  37 ++++++------
+ .../run_mmo_700_grasp.py                           |  31 +++++-----
+ .../run_mmo_700_grasp_headless.py                  |  31 +++++-----
+ .../run_mmo_700_scene.py                           |  31 +++++-----
+ test_ik.py => scripts/test_ik.py                   |  33 +++++++++--
+ test_perception.py => scripts/test_perception.py   |  47 ++++++++-------
+ test_traj.py => scripts/test_traj.py               |  21 ++++++-
+ 121 files changed, 208 insertions(+), 120 deletions(-)
+
+commit f6f0c8765eefed0ff704da928c308f945ad98fc9
+Author: ItsShriks <nakhyeshrikar@icloud.com>
+Date:   2026-08-06 11:04:04
+
+    Add Active Perception test
+
+ .DS_Store                                  | Bin 6148 -> 0 bytes
+ .gitignore                                 |   1 +
+ MUJOCO_LOG.TXT                             |  36 +++
+ robots/mmo_700_wbc.xml                     |  20 +-
+ scripts/MUJOCO_LOG.TXT                     |  27 ++
+ scripts/active_perception_dynamic_wbc.py   | 443 +++++++++++++++++++++++++++++
+ scripts/active_perception_kinematic_wbc.py | 416 +++++++++++++++++++++++++++
+ scripts/perception_core.py                 | 187 ++++++++++++
+ 8 files changed, 1129 insertions(+), 1 deletion(-)
