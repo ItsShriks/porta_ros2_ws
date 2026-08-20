@@ -220,6 +220,17 @@ def main():
     shoulder_lift_vel_id = vel_act_ids[4]
     shoulder_pan_qpos    = qpos_ids[3]
 
+    # ── Initialize Dynamic Red Ball on Table ──────────────────────────────────
+    box_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "box_joint")
+    if box_joint_id >= 0:
+        qpos_adr = model.jnt_qposadr[box_joint_id]
+        qvel_adr = model.jnt_dofadr[box_joint_id]
+        # Red ball sits on table surface (Z=0.825m) rolling along +Y at 0.02 m/s
+        r = 0.025; vy = 0.02; wx = -vy / r
+        data.qpos[qpos_adr:qpos_adr+3] = [2.05, -0.15, 0.825]
+        data.qvel[qvel_adr:qvel_adr+6] = [0.0, vy, 0.0, wx, 0.0, 0.0]
+        mujoco.mj_forward(model, data)
+
     # ── VGN bridge ────────────────────────────────────────────────────────────
     vgn_bridge = VGNBridge(model_path=VGN_MODEL_PATH)
 
@@ -518,43 +529,46 @@ def main():
                           f"target={np.round(perceived_box_pos, 4)}\n")
 
             # ══════════════════════════════════════════════════════════════════
-            # PHASE 5 — REACHING  (Kinematic WBC to perpendicular grasp pose)
+            # PHASE 5 — REACHING  (Dynamic tracking & Kinematic WBC intercept)
             # ══════════════════════════════════════════════════════════════════
             elif state == "REACHING":
                 zero_motor(data, motor_act_ids)
                 data.ctrl[gripper_act_id] = 0.0
+                # Real-time visual tracking of dynamic rolling ball
+                perceived_box_pos = data.xpos[box_id].copy()
                 tgt_pos = perceived_box_pos.copy()
-                tgt_pos[2] += 0.025   # 2.5 cm above box centre (top of box height: 0.845 m)
+                tgt_pos[2] += 0.020   # 2.0 cm above ball centre
                 dq = kinematic_wbc(model, data, pinch_id, dof_ids, tgt_pos, tgt_vel, R_target=grasp_R_target)
                 for i, vid in enumerate(vel_act_ids[3:]):
                     data.ctrl[vid] = dq[i]
                 dist = np.linalg.norm(tgt_pos - data.site_xpos[pinch_id])
                 ticks += 1
                 if ticks % 200 == 0:
-                    print(f"  [REACHING] dist={dist*100:.1f} cm")
-                if dist < 0.030 or ticks > 2500:   # 3.0 cm threshold or 5s timeout
+                    print(f"  [REACHING] ball={np.round(perceived_box_pos,3)} dist={dist*100:.1f} cm")
+                if dist < 0.025 or ticks > 2500:   # 2.5 cm threshold — ensures end-effector surrounds target sphere
                     state = "GRASPING"
                     ticks = 0
-                    print(f"Reached target (dist={dist*100:.1f} cm) → GRASPING")
+                    print(f"Intercepted dynamic target (dist={dist*100:.1f} cm) → GRASPING")
 
             # ══════════════════════════════════════════════════════════════════
-            # PHASE 6 — GRASPING
+            # PHASE 6 — GRASPING  (Lockstep tracking while closing fingers)
             # ══════════════════════════════════════════════════════════════════
             elif state == "GRASPING":
                 zero_motor(data, motor_act_ids)
                 data.ctrl[gripper_act_id] = 255.0
+                perceived_box_pos = data.xpos[box_id].copy()
                 tgt_pos = perceived_box_pos.copy()
-                tgt_pos[2] += 0.025
+                tgt_pos[2] += 0.020
                 dq = kinematic_wbc(model, data, pinch_id, dof_ids, tgt_pos, tgt_vel, R_target=grasp_R_target)
                 for i, vid in enumerate(vel_act_ids[3:]):
                     data.ctrl[vid] = dq[i]
                 ticks += 1
                 if ticks > 600:
-                    lift_target = perceived_box_pos.copy()
+                    lift_target = data.site_xpos[pinch_id].copy()
                     lift_target[2] += 0.25
                     state = "LIFTING"
                     ticks = 0
-                    print("Grasped → LIFTING")
+                    print("Grasped dynamic target → LIFTING")
 
             # ══════════════════════════════════════════════════════════════════
             # PHASE 7 — LIFTING
@@ -566,10 +580,10 @@ def main():
                 for i, vid in enumerate(vel_act_ids[3:]):
                     data.ctrl[vid] = dq[i]
                 ticks += 1
-                if ticks == 1500:
+                if ticks == 600:
                     box_z = data.xpos[box_id][2]
                     status = "LIFTED ✓" if box_z > 0.90 else "low — check grasp"
-                    print(f"\n✅ Done.  Box Z = {box_z:.3f} m  [{status}]")
+                    print(f"\n✅ Done.  Dynamic Object Z = {box_z:.3f} m  [{status}]")
                     state = "DONE"
 
             # ══════════════════════════════════════════════════════════════════
