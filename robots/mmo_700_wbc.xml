@@ -148,10 +148,16 @@
       <geom name="table_leg_fr" type="cylinder" size="0.025 0.375"     pos=" 0.35 -0.30 0.375"    material="wood" contype="1" conaffinity="1" />
       <geom name="table_leg_bl" type="cylinder" size="0.025 0.375"     pos="-0.35  0.30 0.375"    material="wood" contype="1" conaffinity="1" />
       <geom name="table_leg_br" type="cylinder" size="0.025 0.375"     pos="-0.35 -0.30 0.375"    material="wood" contype="1" conaffinity="1" />
+      <!-- Skirting frame around bottom (ensures 2D LiDAR ray detection) -->
+      <geom name="table_skirt_front" type="box" size="0.02 0.35 0.20" pos="-0.38 0 0.20" material="wood" contype="1" conaffinity="1" />
+      <geom name="table_skirt_rear"  type="box" size="0.02 0.35 0.20" pos=" 0.38 0 0.20" material="wood" contype="1" conaffinity="1" />
+      <geom name="table_skirt_left"  type="box" size="0.38 0.02 0.20" pos="0  0.33 0.20" material="wood" contype="1" conaffinity="1" />
+      <geom name="table_skirt_right" type="box" size="0.38 0.02 0.20" pos="0 -0.33 0.20" material="wood" contype="1" conaffinity="1" />
     </body>
 
     <!-- ===== TARGET BOX ===== -->
-    <body name="target_box" pos="2.0 0 0.82">
+    <!-- Offset from table centre (2.0 0) to test perception without ground-truth centering -->
+    <body name="target_box" pos="2.05 0.08 0.82">
       <freejoint name="box_joint" />
       <geom name="box_geom" type="box" size="0.02 0.02 0.02" material="red_box" mass="0.1" contype="1" conaffinity="1" />
     </body>
@@ -175,16 +181,16 @@
       <body name="lidar_1_link" pos="0.338 0.288 0.223" quat="0.0007 0.923 0.3848 0.0003">
         <geom name="lidar_1_visual" pos="0 0 -0.12" quat="0.0006 -0.0006 -0.7068 0.7074"
               type="mesh" mesh="lidar_mesh" material="mount_grey" class="visual" />
-        <!-- Rangefinder site pointing in local -Z (away from mounting surface) -->
-        <site name="lidar_front_site" pos="0 0 0" quat="0.7071 0 0.7071 0" size="0.005" group="4" />
+        <!-- Rangefinder site pointing in local forward direction (+X in world) -->
+        <site name="lidar_front_site" pos="0 0 0" quat="0.7075 -0.5020 0.4974 0" size="0.005" group="4" />
       </body>
 
       <!-- Rear LiDAR (SICK S300 — rear-left corner) -->
       <body name="lidar_2_link" pos="-0.338 -0.288 0.223" quat="-0.0003 -0.3841 0.9233 0.0007">
         <geom name="lidar_2_visual" pos="0 0 -0.12" quat="0.0006 -0.0006 -0.7068 0.7074"
               type="mesh" mesh="lidar_mesh" material="mount_grey" class="visual" />
-        <!-- Rangefinder site pointing in local -Z -->
-        <site name="lidar_rear_site" pos="0 0 0" quat="0.7071 0 0.7071 0" size="0.005" group="4" />
+        <!-- Rangefinder site pointing in local rearward direction (-X in world) -->
+        <site name="lidar_rear_site" pos="0 0 0" quat="0.7075 -0.5013 0.4982 0" size="0.005" group="4" />
       </body>
 
       <!-- Front-left caster wheel -->
@@ -634,7 +640,7 @@
         pan_tilt       (2): tilt pan
     -->
     <key name="home"
-         qpos="2.0 0 0.82 1 0 0 0
+         qpos="2.05 0.08 0.82 1 0 0 0
                0 0 0
                0 0 0 0 0 0 0 0
                0 -1.559 1.581 -1.565 -1.570 0
