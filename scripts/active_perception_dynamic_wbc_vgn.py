@@ -54,6 +54,7 @@ Run:
   python3 scripts/active_perception_dynamic_wbc_vgn.py [--headless]
 """
 
+import argparse
 import sys
 import time
 from pathlib import Path
@@ -175,9 +176,9 @@ def kinematic_wbc(model, data, pinch_id, dof_ids, tgt_pos, tgt_vel, R_target=Non
 
     p_err = tgt_pos - data.site_xpos[pinch_id]
     r_err = rot_err(R_target, data.site_xmat[pinch_id].reshape(3, 3))
-    v_des = np.concatenate([8.0 * p_err, 4.0 * r_err])
+    v_des = np.concatenate([25.0 * p_err, 8.0 * r_err])
 
-    dq = J6.T @ np.linalg.solve(J6 @ J6.T + 1e-3 * np.eye(6), v_des)
+    dq = J6.T @ np.linalg.solve(J6 @ J6.T + 1e-4 * np.eye(6), v_des)
     return dq
 
 
@@ -220,19 +221,51 @@ def main():
     shoulder_lift_vel_id = vel_act_ids[4]
     shoulder_pan_qpos    = qpos_ids[3]
 
-    # ── Initialize Dynamic Red Ball on Table ──────────────────────────────────
+    # ── CLI Arguments ─────────────────────────────────────────────────────────
+    parser = argparse.ArgumentParser(description="MMO-700 Active Perception, Dynamic WBC & VGN Grasping")
+    parser.add_argument("--headless", action="store_true", help="Run in headless mode without visual viewer window")
+    parser.add_argument("--no_vgn", "--no-vgn", action="store_true", help="Bypass VGN 6D scanning; use Coarse_detect direct top-down grasp")
+    parser.add_argument("--sphere", action="store_true", help="Set target object geometry to dynamic sphere")
+    parser.add_argument("--box", action="store_true", help="Set target object geometry to box")
+    parser.add_argument("--object_type", choices=["sphere", "box"], default=None, help="Set target object geometry type")
+    args = parser.parse_args()
+
+    if args.box:
+        obj_type = "box"
+    elif args.sphere:
+        obj_type = "sphere"
+    elif args.object_type:
+        obj_type = args.object_type.lower()
+    else:
+        obj_type = "sphere"
+
+    # Configure target object geometry (sphere vs box) in MuJoCo model
+    box_geom_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "box_geom")
+    if box_geom_id >= 0:
+        if obj_type == "box":
+            model.geom_type[box_geom_id] = mujoco.mjtGeom.mjGEOM_BOX
+            model.geom_size[box_geom_id] = [0.025, 0.025, 0.025]
+        else:
+            model.geom_type[box_geom_id] = mujoco.mjtGeom.mjGEOM_SPHERE
+            model.geom_size[box_geom_id] = [0.025, 0.025, 0.025]
+
+    # ── Initialize Dynamic Red Target on Table ────────────────────────────────
     box_joint_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "box_joint")
     if box_joint_id >= 0:
         qpos_adr = model.jnt_qposadr[box_joint_id]
         qvel_adr = model.jnt_dofadr[box_joint_id]
-        # Red ball sits on table surface (Z=0.825m) rolling along +Y at 0.02 m/s
-        r = 0.025; vy = 0.02; wx = -vy / r
-        data.qpos[qpos_adr:qpos_adr+3] = [2.05, -0.15, 0.825]
+        # Dynamic red object sits on table surface (Z_table=0.80m) rolling/sliding along +Y at 0.02 m/s
+        r = 0.025
+        vy = 0.02
+        wx = -vy / r if obj_type == "sphere" else 0.0
+        z_init = 0.825 if obj_type == "sphere" else 0.8125   # exact contact Z for sphere vs box
+        data.qpos[qpos_adr:qpos_adr+3] = [2.05, -0.25, z_init]
         data.qvel[qvel_adr:qvel_adr+6] = [0.0, vy, 0.0, wx, 0.0, 0.0]
         mujoco.mj_forward(model, data)
 
     # ── VGN bridge ────────────────────────────────────────────────────────────
     vgn_bridge = VGNBridge(model_path=VGN_MODEL_PATH)
+    use_vgn = vgn_bridge.available and not args.no_vgn
 
     # ── State machine variables ────────────────────────────────────────────────
     state              = "DRIVE"
@@ -258,18 +291,17 @@ def main():
     print("\n" + "═" * 65)
     print("  MMO-700  Dynamic WBC + LiDAR Avoidance + VGN Grasping")
     print("═" * 65)
-    print(f"  Controller  : Operational Space Control (torque)")
-    print(f"  LiDAR       : SICK S300  slow={LIDAR_SLOW_DIST} m  "
+    print(f"  Controller   : Operational Space Control (torque)")
+    print(f"  LiDAR        : SICK S300  slow={LIDAR_SLOW_DIST} m  "
           f"stop={LIDAR_STOP_DIST} m  emergency={LIDAR_EMERGENCY_DIST} m")
-    print(f"  VGN         : available={vgn_bridge.available}  "
-          f"model={VGN_MODEL_PATH.name}")
-    if not vgn_bridge.available:
-        print("  ⚠  VGN fallback: depth-unproject for grasp position, "
-              "top-down rotation")
-    print(f"  Target box  : pos=[2.05, 0.08, 0.82] m  (offset from table centre)")
+    vgn_desc = f"available={vgn_bridge.available}  enabled={use_vgn}"
+    if args.no_vgn:
+        vgn_desc += "  [BYPASSED via --no_vgn]"
+    print(f"  VGN          : {vgn_desc}  model={VGN_MODEL_PATH.name}")
+    print(f"  Target Object: {obj_type.upper()} (size=0.025 m)")
     print("═" * 65 + "\n")
 
-    headless = "--headless" in sys.argv
+    headless = args.headless
     if headless:
         print("Running in headless mode …")
         v = None
@@ -391,10 +423,10 @@ def main():
                 if ticks >= SETTLE_STEPS:
                     state    = "COARSE_DETECT"
                     ticks    = 0
-                    scan_dir = 1
+                    scan_dir = -1   # sweep right side first (negative pan)
                     scan_tmr = 0
                     print(f"[SETTLE_ARM → COARSE_DETECT]  "
-                          f"Starting shoulder_pan sweep "
+                          f"Starting shoulder_pan sweep RIGHT first "
                           f"[{CFG.scan_start:.1f} → {CFG.scan_end:.1f}] rad …")
 
             # ══════════════════════════════════════════════════════════════════
@@ -429,7 +461,8 @@ def main():
                             model, data, CFG.cam_name, cx, cy, depth)
                         if pt is not None:
                             coarse_pos = pt.copy()
-                            coarse_pos[2] -= CFG.box_half_height
+                            half_h = 0.025 if obj_type == "sphere" else 0.0125
+                            coarse_pos[2] -= half_h
                             gt  = data.xpos[box_id].copy()
                             err = np.linalg.norm(coarse_pos - gt)
                             print(f"\n[COARSE_DETECT] ✓ box found "
@@ -437,23 +470,26 @@ def main():
                                   f"pan={cur_pan:.3f} rad")
                             print(f"  Coarse pos  : {np.round(coarse_pos, 4)}")
                             print(f"  Ground truth: {np.round(gt, 4)}")
-                            print(f"  3-D error   : {err*100:.2f} cm\n")
                             perceived_box_pos = coarse_pos.copy()
-
-                            if vgn_bridge.available:
+                            if use_vgn:
                                 vgn_bridge.init_tsdf(perceived_box_pos)
                                 vgn_view_idx       = 0
                                 vgn_settle_counter = 0
+                                cam_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_CAMERA, CFG.cam_name)
+                                cam_pos = data.cam_xpos[cam_id]
+                                obj_pan = float(np.arctan2(perceived_box_pos[1] - cam_pos[1], perceived_box_pos[0] - cam_pos[0]))
+                                vgn_pan_targets = list(np.linspace(obj_pan - 0.20, obj_pan + 0.20, VGN_N_VIEWS))
                                 state = "VGN_SCAN"
                                 print(f"[COARSE_DETECT → VGN_SCAN]  "
-                                      f"Collecting {VGN_N_VIEWS} TSDF views …")
+                                      f"Collecting {VGN_N_VIEWS} TSDF views around pan={obj_pan:.3f} rad …")
                             else:
                                 q_home = data.qpos.copy()
+                                grasp_R_target = R_TOPDOWN.copy()
                                 state  = "REACHING"
                                 ticks  = 0
-                                print("[COARSE_DETECT → REACHING]  "
-                                      "(VGN unavailable — depth-unproject position, "
-                                      "top-down rotation)")
+                                reason = "--no_vgn flag set" if args.no_vgn else "VGN unavailable"
+                                print(f"[COARSE_DETECT → REACHING]  "
+                                      f"Direct grasp ({reason}): depth-unproject position, top-down rotation\n")
                         else:
                             if scan_tmr % (CFG.render_every * 20) == 0:
                                 print(f"  [COARSE_DETECT] box visible but depth "
@@ -511,8 +547,9 @@ def main():
                             print(f"  Quality score    : {score:.3f}")
                             print(f"  Ground truth pos : {np.round(gt, 4)}")
                             print(f"  Position error   : {err*100:.2f} cm\n")
+                            pos_w[2] = perceived_box_pos[2]
                             perceived_box_pos = pos_w.copy()
-                            grasp_R_target    = rot_w.copy()
+                            grasp_R_target    = R_TOPDOWN.copy()
                         else:
                             print("  [VGN] best_grasp_world() returned None "
                                   "— using coarse position, top-down rotation")
@@ -537,7 +574,7 @@ def main():
                 # Real-time visual tracking of dynamic rolling ball
                 perceived_box_pos = data.xpos[box_id].copy()
                 tgt_pos = perceived_box_pos.copy()
-                tgt_pos[2] += 0.020   # 2.0 cm above ball centre
+                tgt_pos[2] += 0.015   # 1.5 cm clearance above sphere centre for clean approach
                 dq = kinematic_wbc(model, data, pinch_id, dof_ids, tgt_pos, tgt_vel, R_target=grasp_R_target)
                 for i, vid in enumerate(vel_act_ids[3:]):
                     data.ctrl[vid] = dq[i]
@@ -545,7 +582,7 @@ def main():
                 ticks += 1
                 if ticks % 200 == 0:
                     print(f"  [REACHING] ball={np.round(perceived_box_pos,3)} dist={dist*100:.1f} cm")
-                if dist < 0.025 or ticks > 2500:   # 2.5 cm threshold — ensures end-effector surrounds target sphere
+                if dist < 0.030 or ticks > 2500:
                     state = "GRASPING"
                     ticks = 0
                     print(f"Intercepted dynamic target (dist={dist*100:.1f} cm) → GRASPING")
@@ -556,16 +593,17 @@ def main():
             elif state == "GRASPING":
                 zero_motor(data, motor_act_ids)
                 data.ctrl[gripper_act_id] = 255.0
-                perceived_box_pos = data.xpos[box_id].copy()
-                tgt_pos = perceived_box_pos.copy()
-                tgt_pos[2] += 0.020
-                dq = kinematic_wbc(model, data, pinch_id, dof_ids, tgt_pos, tgt_vel, R_target=grasp_R_target)
+                if ticks == 0:
+                    grasp_pos = data.xpos[box_id].copy()
+                    if obj_type == "sphere":
+                        grasp_pos[2] -= 0.005   # cradle sphere from below
+                dq = kinematic_wbc(model, data, pinch_id, dof_ids, grasp_pos, tgt_vel, R_target=grasp_R_target)
                 for i, vid in enumerate(vel_act_ids[3:]):
                     data.ctrl[vid] = dq[i]
                 ticks += 1
-                if ticks > 600:
+                if ticks > 250:
                     lift_target = data.site_xpos[pinch_id].copy()
-                    lift_target[2] += 0.25
+                    lift_target[2] += 0.15
                     state = "LIFTING"
                     ticks = 0
                     print("Grasped dynamic target → LIFTING")
@@ -576,11 +614,13 @@ def main():
             elif state == "LIFTING":
                 zero_motor(data, motor_act_ids)
                 data.ctrl[gripper_act_id] = 255.0
+                data.ctrl[base_x_vel_id] = 0.0
+                data.ctrl[base_y_vel_id] = 0.0
                 dq = kinematic_wbc(model, data, pinch_id, dof_ids, lift_target, tgt_vel, R_target=grasp_R_target)
                 for i, vid in enumerate(vel_act_ids[3:]):
                     data.ctrl[vid] = dq[i]
                 ticks += 1
-                if ticks == 600:
+                if ticks == 900:
                     box_z = data.xpos[box_id][2]
                     status = "LIFTED ✓" if box_z > 0.90 else "low — check grasp"
                     print(f"\n✅ Done.  Dynamic Object Z = {box_z:.3f} m  [{status}]")

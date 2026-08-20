@@ -78,6 +78,9 @@ def main():
         depth   = data[f"depth_{i}"].astype(np.float32)
         cam_pos = data[f"cam_pos_{i}"]                      # (3,)
         cam_mat = data[f"cam_mat_{i}"].reshape(3, 3)        # world←cam
+        # Convert MuJoCo camera frame (+X right, +Y up, -Z forward)
+        # to Open3D camera frame (+X right, +Y down, +Z forward)
+        cam_mat = cam_mat @ np.diag([1.0, -1.0, -1.0])
         fovy    = float(data[f"fovy_{i}"])
         img_h   = int(data[f"img_h_{i}"])
         img_w   = int(data[f"img_w_{i}"])
