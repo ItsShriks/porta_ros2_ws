@@ -58,6 +58,7 @@ import argparse
 import sys
 import time
 from pathlib import Path
+import shutil
 
 import mujoco
 from mujoco import viewer
