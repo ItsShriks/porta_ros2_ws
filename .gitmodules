@@ -3,3 +3,7 @@
 	url = git@github.com:ItsShriks/steve_essentials.git
 	branch = devo
 
+[submodule "vgn"]
+	path = vgn
+	url = git@github.com:ItsShriks/vgn.git
+	branch = dev
