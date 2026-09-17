@@ -1,3 +1,8 @@
 [submodule "steve_essentials"]
 	path = steve_essentials
 	url = git@github.com:ItsShriks/steve_essentials.git
+	branch = dev
+[submodule "vgn"]
+	path = vgn
+	url = git@github.com:ItsShriks/vgn.git
+	branch = dev
